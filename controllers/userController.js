@@ -1,4 +1,5 @@
 const User = require('../models/UserModel')
+const Grade = require('../models/GradeModel')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const validator = require('validator')
@@ -122,9 +123,9 @@ const addAdmin = async (req, res) => {
 // Signup user
 const signup = async (req, res) => {
     try {
-        const {name, email, password, confirmPassword, phone, anotherPhone, address} = req.body
-        console.log("req.body:", {name, email, password, confirmPassword, phone, anotherPhone, address})
-        if(!email || !password || !name || !phone || !anotherPhone || !address || !confirmPassword){
+        const {name, email, password, grade, confirmPassword, phone, anotherPhone, address} = req.body
+        console.log("req.body:", {name, email, password, confirmPassword, phone, anotherPhone, address, grade})
+        if(!email || !password || !name || !phone || !anotherPhone || !address || !confirmPassword || !grade){
             throw Error('All fields are required.')
           }
           if(!validator.isEmail(email)){
@@ -147,6 +148,7 @@ const signup = async (req, res) => {
             if(phone === anotherPhone){
                 throw Error("رقم التليفون الثاني يجب أن يكون مختلف عن رقم التليفون الأول")
             }
+
             const digitsRegex = /^\d+$/;
             console.log("Is phone valid:", digitsRegex.test(phone));
             console.log("Is parent phone valid:", digitsRegex.test(anotherPhone));
@@ -171,9 +173,11 @@ const signup = async (req, res) => {
                 password: hash, 
                 phone, 
                 anotherPhone, 
+                grade,
                 address,
                 role: 'student'
             })
+
             const token = createToken(user._id)
             res.status(201).json({user, token})
     } catch (error) {

@@ -1,7 +1,19 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// Define the Lesson schema
+const codeSchema = new Schema({
+    code: { 
+        type: String, 
+        default: ""
+    },
+    status: {
+        type: String,
+        enum: ['متاح', 'تم البيع', 'تم الاستخدام'],
+        default: 'متاح'
+    },
+    created_at: { type: Date, default: Date.now }
+});
+
 const lessonSchema = new Schema({
     title: { 
         type: String, 
@@ -29,6 +41,7 @@ const lessonSchema = new Schema({
         type: Boolean,
         default: true
     },
+    codes: [codeSchema],
     created_at: { type: Date, default: Date.now }
 });
 

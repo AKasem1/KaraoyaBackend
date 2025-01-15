@@ -85,6 +85,11 @@ const userSchema = new Schema({
         enum: ['student', 'admin'], 
         default: 'student'
     },
+    grade: { 
+        type: Schema.Types.ObjectId, 
+        ref: 'Grade', 
+        required: true 
+    },
     paymentMethod: [paymentMethodSchema],
     evaluations: [evaluationSchema],
     wallet: [walletSchema],

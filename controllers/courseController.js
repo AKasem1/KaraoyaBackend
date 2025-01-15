@@ -1,35 +1,44 @@
 const Course = require('../models/CourseModel');
 const Grade = require('../models/GradeModel');
+const Lesson = require('../models/LessonModel');
 const mongoose = require('mongoose');
 const XLSX = require('xlsx');
 
-const isCodeExist = async (code, courseId) => {
-    const course = await Course.findOne({
-        _id: courseId,
-        "codes.code": code
-    });
-    return course !== null;
+const isCodeExist = async (code, id, forLesson) => {
+    if (forLesson) {
+        const lesson = await Lesson.findOne({
+            _id: id,
+            "codes.code": code
+        });
+        return lesson !== null;
+    } else {
+        const course = await Course.findOne({
+            _id: id,
+            "codes.code": code
+        });
+        return course !== null;
+    }
 };
 
 const addCourse = async (req, res) => {
     try {
         const courses = req.body
         console.log("courses: ", courses)
-        if(!courses){
+        if (!courses) {
             throw Error('يجب إدخال الكورسات')
         }
         console.log("Passed courses check")
         const coursesArray = []
         for (let course of courses) {
-            const grade = await Grade.findOne({name: course.grade})
-            if(!grade){
+            const grade = await Grade.findOne({ name: course.grade })
+            if (!grade) {
                 throw Error('الصف الدراسي غير موجود')
             }
-            coursesArray.push({name: course.name, grade: grade._id, imgURL: course.imgURL, price: course.price})
+            coursesArray.push({ name: course.name, grade: grade._id, imgURL: course.imgURL, price: course.price })
         }
         const createdCourses = await Course.insertMany(coursesArray)
         console.log("createdCourses: ", createdCourses)
-        res.status(200).json({message: 'تمت إضافة الكورسات بنجاح', courses: createdCourses})
+        res.status(200).json({ message: 'تمت إضافة الكورسات بنجاح', courses: createdCourses })
     }
     catch (error) {
         console.error(error.message)
@@ -40,7 +49,7 @@ const addCourse = async (req, res) => {
 const getCourses = async (req, res) => {
     try {
         const courses = await Course.find().populate('grade')
-        if(!courses){
+        if (!courses) {
             throw Error('لا يوجد كورسات')
         }
         res.status(200).json(courses)
@@ -54,11 +63,11 @@ const getCourses = async (req, res) => {
 const deleteCourse = async (req, res) => {
     try {
         const course = await Course.findById(req.params.id)
-        if(!course){
+        if (!course) {
             throw Error('الكورس غير موجود')
         }
         await course.remove()
-        res.status(200).json({message: 'تم حذف الكورس بنجاح'})
+        res.status(200).json({ message: 'تم حذف الكورس بنجاح' })
     }
     catch (error) {
         console.error(error.message)
@@ -70,19 +79,19 @@ const updateCourse = async (req, res) => {
     try {
         const { name, gradeName } = req.body
         const { id } = req.params
-        if(!name && !gradeName){
+        if (!name && !gradeName) {
             throw Error('يجب إدخال جميع البيانات')
         }
-        const grade = await Grade.findOne({name: gradeName})
-        if(gradeName && !grade){
+        const grade = await Grade.findOne({ name: gradeName })
+        if (gradeName && !grade) {
             throw Error('الصف الدراسي غير موجود')
         }
         const course = await Course.findById(id)
-        if(!course){
+        if (!course) {
             throw Error('الكورس غير موجود')
         }
-        name? course.name = name : null
-        gradeName? course.grade = grade._id : null
+        name ? course.name = name : null
+        gradeName ? course.grade = grade._id : null
         await course.save()
         res.status(200).json(course)
     }
@@ -96,8 +105,8 @@ const getCoursesByGrade = async (req, res) => {
     try {
         const { grade_id } = req.params
         console.log("grade_id: ", grade_id)
-        const courses = await Course.find({grade: grade_id}).populate('grade')
-        if(!courses){
+        const courses = await Course.find({ grade: grade_id }).populate('grade')
+        if (!courses) {
             throw Error('لا يوجد كورسات')
         }
         console.log("courses: ", courses)
@@ -111,9 +120,9 @@ const getCoursesByGrade = async (req, res) => {
 const getCoursesByGradeName = async (req, res) => {
     try {
         const { gradeName } = req.body;
-        const grade = await Grade.findOne({name: gradeName});
-        const courses = await Course.find({grade: grade._id})
-        if(!courses){
+        const grade = await Grade.findOne({ name: gradeName });
+        const courses = await Course.find({ grade: grade._id })
+        if (!courses) {
             throw Error('لا يوجد كورسات')
         }
         console.log("courses: ", courses)
@@ -184,7 +193,7 @@ const getCourseById = async (req, res) => {
     try {
         console.log("req.params.courseId: ", req.params.courseId)
         const course = await Course.findById(req.params.courseId).populate('grade')
-        if(!course){
+        if (!course) {
             throw Error('الكورس غير موجود')
         }
         res.status(200).json(course)
@@ -198,7 +207,7 @@ const getCourseById = async (req, res) => {
 const deleteAllCourses = async (req, res) => {
     try {
         await Course.deleteMany()
-        res.status(200).json({message: 'تم حذف جميع الكورسات بنجاح'})
+        res.status(200).json({ message: 'تم حذف جميع الكورسات بنجاح' })
     }
     catch (error) {
         console.error(error.message)
@@ -208,24 +217,30 @@ const deleteAllCourses = async (req, res) => {
 
 const generateCodes = async (req, res) => {
     try {
-        const { numberOfCodes, courseId } = req.body;
+        const { numberOfCodes, courseId, lessonId } = req.body;
+        console.log("lesson id in generating codes: ", lessonId)
+        const forLesson = lessonId ? true : false;
         const codePromises = Array.from({ length: numberOfCodes }, async () => {
             let newCode;
+            const id = lessonId ? lessonId : courseId;
             do {
                 newCode = (Math.random() + 1).toString(36).substring(7);
-            } while (await isCodeExist(newCode, courseId));
+            } while (await isCodeExist(newCode, id, forLesson));
             return newCode;
         });
-        
-        const generatedCodes = await Promise.all(codePromises)
+        const generatedCodes = await Promise.all(codePromises);
         const bulkOperations = generatedCodes.map(code => ({
             updateOne: {
-                filter: { _id: courseId },
-                update: { $push: { codes: { code } } }
+            filter: { _id: forLesson ? lessonId : courseId },
+            update: { $push: { codes: { code } } }
             }
         }));
-        
-        await Course.bulkWrite(bulkOperations);
+
+        if (forLesson) {
+            await Lesson.bulkWrite(bulkOperations);
+        } else {
+            await Course.bulkWrite(bulkOperations);
+        }
         res.status(200).json(generatedCodes);
     } catch (error) {
         console.error(error.message);
@@ -235,27 +250,29 @@ const generateCodes = async (req, res) => {
 
 
 const getCodes = async (req, res) => {
-    const { courseId, codeStatus } = req.body;
+    const { courseId, codeStatus, lessonId } = req.body;
     try {
-        console.log(courseId, codeStatus)
-        const courseObjectId = new mongoose.Types.ObjectId(courseId);
-        const result = await Course.aggregate([
-            { $match: { _id: courseObjectId } },
+        console.log(courseId, codeStatus, lessonId)
+        const forLesson = lessonId ? true : false;
+        const id = lessonId ? lessonId : courseId;
+        const model = forLesson ? Lesson : Course;
+        const result = await model.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(id) } },
             {
-                $project: {
-                    codes: {
-                        $filter: {
-                            input: "$codes",
-                            as: "code",
-                            cond: { $eq: ["$$code.status", codeStatus] }
-                        }
-                    }
+            $project: {
+                codes: {
+                $filter: {
+                    input: "$codes",
+                    as: "code",
+                    cond: { $eq: ["$$code.status", codeStatus] }
                 }
+                }
+            }
             }
         ]);
 
         if (result.length === 0) {
-            throw new Error('هذا الكورس غير موجود');
+            throw new Error('هذا الكورس/الدرس غير موجود');
         }
 
         res.status(200).json(result[0].codes);
@@ -267,52 +284,54 @@ const getCodes = async (req, res) => {
 
 
 const getExcelCodes = async (req, res) => {
-    const { courseId, codeStatus, selectedGradeName } = req.body;
+    const { courseId, codeStatus, selectedGradeName, lessonId } = req.body;
     try {
         let codes = [];
-        console.log(courseId, codeStatus, selectedGradeName)
-        const courseObjectId = new mongoose.Types.ObjectId(courseId);
-        if( codeStatus == "تم الاستخدام" || codeStatus == "تم البيع"){
-            const result = await Course.aggregate([
-                { $match: { _id: courseObjectId } },
-                {
-                    $project: {
-                        codes: {
-                            $filter: {
-                                input: "$codes",
-                                as: "code",
-                                cond: { $eq: ["$$code.status", codeStatus] }
-                            }
-                        }
+        console.log(courseId, codeStatus, selectedGradeName, lessonId)
+        const forLesson = lessonId ? true : false;
+        const id = lessonId ? lessonId : courseId;
+        const objectId = new mongoose.Types.ObjectId(forLesson? lessonId : courseId);
+        if (codeStatus == "تم الاستخدام" || codeStatus == "تم البيع") {
+            const result = await (forLesson ? Lesson : Course).aggregate([
+            { $match: { _id: objectId } },
+            {
+                $project: {
+                codes: {
+                    $filter: {
+                    input: "$codes",
+                    as: "code",
+                    cond: { $eq: ["$$code.status", codeStatus] }
                     }
                 }
+                }
+            }
             ]);
             if (result.length === 0) {
-                throw new Error('هذا الكورس غير موجود');
+            throw new Error(forLesson ? 'هذا الدرس غير موجود' : 'هذا الكورس غير موجود');
             }
             codes = result[0].codes;
         }
-        else if(codeStatus == "متاح"){
-            const updatedCourse = await Course.findOneAndUpdate(
-                { _id: courseObjectId },
-                { $set: { "codes.$[elem].status": "تم البيع" } },
-                { 
-                    arrayFilters: [{ "elem.status": codeStatus }],
-                    new: true // Return the updated document
-                }
-            );
-    
-            if (!updatedCourse) {
-                throw new Error('هذا الكورس غير موجود');
+        else if (codeStatus == "متاح") {
+            const updatedDocument = await (forLesson ? Lesson : Course).findOneAndUpdate(
+            { _id: objectId },
+            { $set: { "codes.$[elem].status": "تم البيع" } },
+            {
+                arrayFilters: [{ "elem.status": codeStatus }],
+                new: true
             }
-            codes = updatedCourse.codes.filter(code => code.status === "تم البيع");
+            );
+
+            if (!updatedDocument) {
+                throw new Error(forLesson ? 'هذا الدرس غير موجود' : 'هذا الكورس غير موجود');
+            }
+            codes = updatedDocument.codes.filter(code => code.status === "تم البيع");
         }
 
         const workbook = XLSX.utils.book_new()
         const worksheetData = codes.map(c => ({
             'الكود': c.code,
             'الصف': selectedGradeName
-          }));
+        }));
         const worksheet = XLSX.utils.json_to_sheet(worksheetData);
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Codes');
         const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
