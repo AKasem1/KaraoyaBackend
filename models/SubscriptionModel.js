@@ -11,9 +11,12 @@ const subscriptionSchema = new Schema({
         type: Schema.Types.ObjectId, 
         ref: 'Course' 
     },
+    lesson_id: {
+        type: Schema.Types.ObjectId,
+        ref: 'Lesson'
+    },
     price: {
         type: Number,
-        required: true,
     },
     created_at: { 
         type: Date, 

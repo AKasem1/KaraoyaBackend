@@ -4,7 +4,7 @@ const { signup, login, editProfile, forgetPassword, otpVerification, resetPasswo
 const { getGrades } = require('../controllers/gradeController');
 const { getCoursesByGrade, getCourseById } = require('../controllers/courseController');
 const { getCompletedLessons, getLessonsByCourse} = require('../controllers/lessonController')
-const { subscribeCourse, deleteSubscription, getMyCourses } = require('../controllers/subscriptionController')
+const { subscribeCourse, submitCode, deleteSubscription, getMyCourses } = require('../controllers/subscriptionController')
 
 const router = express.Router();
 
@@ -16,13 +16,13 @@ router.post('/resetpassword', resetPassword);
 router.get('/grades', getGrades);
 router.get('/coursesbygrade/:grade_id', getCoursesByGrade);
 
-// router.use(userAuth);
 router.use(userAuth);
 router.put('/editprofile/:id', editProfile)
 router.get('/coursebyid/:courseId', getCourseById);
 
 router.post('/subscribe/:courseId', subscribeCourse)
 router.get('/mycourses/:userId', getMyCourses)
+router.post('/submitcode/:userId', submitCode)
 
 router.get('/lessonsbycourse/:courseId', getLessonsByCourse)
 router.get('/completedlessons', getCompletedLessons);
