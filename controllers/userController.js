@@ -467,9 +467,34 @@ const activityHandler = async (req, res) => {
   res.status(200).json(data);
 };
 
+
+const getWatchingDetails = async (req, res) => {
+    const { userId } = req.params;
+    try {
+      const user = await User.findById(userId)
+      .select('watchingDetails')
+      .populate({
+          path: 'watchingDetails.lesson_id',
+          populate: { path: 'course' },
+      });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        console.log('user.watchingDetails:', user.watchingDetails);
+        res.status(200).json({
+            success: true,
+            watchingDetails: user.watchingDetails,
+        });
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+
 module.exports = {
   signup, editProfile, login, logout,
   getUser, getAllUsers, forgetPassword, otpVerification,
   resetPassword, addAdmin, numOfStudents, getImgUploadKey,
-  getStudents, activityHandler
+  getStudents, activityHandler, getWatchingDetails
 }

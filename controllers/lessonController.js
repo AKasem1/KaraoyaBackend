@@ -195,4 +195,44 @@ const getLessonsByCourse = async (req, res) => {
     }
 }
 
-module.exports = { addLesson, getLesson, getLessons, deleteLesson, deleteAllLessons, latestWeekInCourse, getCompletedLessons, addVideo, getLessonsByCourse};
+const updateWatchDuration = async (req, res) => {
+    const { lessonId, watchDuration, userId } = req.body;
+
+    try {
+        console.log(`Lesson ID: ${lessonId}, Watch Duration: ${watchDuration}, User ID: ${userId}`);
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const lessonIndex = user.watchingDetails.findIndex(detail => detail.lesson_id.toString() === lessonId);
+
+        if (lessonIndex !== -1) {
+            const existingLesson = user.watchingDetails[lessonIndex];
+
+            if (watchDuration > existingLesson.watchDuration) {
+                user.watchingDetails[lessonIndex].watchDuration = watchDuration;
+                user.watchingDetails[lessonIndex].watchTime = new Date(); 
+            }
+        } else {
+            user.watchingDetails.push({
+                lesson_id: lessonId,
+                watchDuration: watchDuration/60,
+                watchTime: new Date(),
+            });
+        }
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Watch duration updated successfully' });
+    } catch (error) {
+        console.error('Error updating watch duration:', error.message);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+
+module.exports = { addLesson, getLesson, getLessons, deleteLesson,
+    deleteAllLessons, latestWeekInCourse, getCompletedLessons,
+    addVideo, getLessonsByCourse, updateWatchDuration};

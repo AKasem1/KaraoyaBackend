@@ -1,9 +1,9 @@
 const express = require('express');
 const userAuth = require('../middlewares/userAuth')
-const { signup, login, editProfile, forgetPassword, otpVerification, resetPassword, logout, activityHandler } = require('../controllers/userController');
+const { signup, login, editProfile, getWatchingDetails, forgetPassword, otpVerification, resetPassword, logout, activityHandler } = require('../controllers/userController');
 const { getGrades } = require('../controllers/gradeController');
 const { getCoursesByGrade, getCourseById } = require('../controllers/courseController');
-const { getCompletedLessons, getLessonsByCourse} = require('../controllers/lessonController')
+const { getCompletedLessons, getLessonsByCourse, updateWatchDuration} = require('../controllers/lessonController')
 const { subscribeCourse, submitCode, deleteSubscription, getMyCourses } = require('../controllers/subscriptionController')
 
 const router = express.Router();
@@ -28,4 +28,7 @@ router.post('/submitcode/:userId', submitCode)
 
 router.get('/lessonsbycourse/:courseId', getLessonsByCourse)
 router.get('/completedlessons', getCompletedLessons);
+router.post('/updateWatchDuration', updateWatchDuration)
+router.get('/watching-details/:userId', getWatchingDetails);
+
 module.exports = router;

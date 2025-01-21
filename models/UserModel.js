@@ -22,10 +22,6 @@ const evaluationSchema = new Schema({
         type: Schema.Types.Decimal128, 
         required: true 
     },
-    completed_lessons: [{ 
-        type: Schema.Types.ObjectId, 
-        ref: 'Lesson' 
-    }],
     score: { 
         type: Number, 
         required: true 
@@ -133,6 +129,13 @@ const userSchema = new Schema({
     wallet: [walletSchema],
     sessions: [sessionSchema],
     activities: [activitySchema],
+    watchingDetails: [
+        {
+            lesson_id: { type: Schema.Types.ObjectId, ref: 'Lesson', required: true },
+            watchDuration: { type: Number, required: true },
+            watchTime: { type: Date, required: true },
+        },
+    ],
     created_at: { 
         type: Date, 
         default: Date.now
