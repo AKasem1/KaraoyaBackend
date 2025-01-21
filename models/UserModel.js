@@ -40,6 +40,44 @@ const walletSchema = new Schema({
     created_at: { type: Date, default: Date.now }
 });
 
+const sessionSchema = new Schema({
+    device: { 
+        type: String, 
+        default: 'Unknown' 
+    },
+    operatingSystem: { 
+        type: String, 
+        required: true 
+    },
+    browser: { 
+        type: String, 
+        required: true 
+    },
+    lastActive: { 
+        type: Date, 
+        default: Date.now 
+    },
+    loginTime: { 
+        type: Date, 
+        default: Date.now 
+    },
+    logoutTime: { 
+        type: Date 
+    },
+});
+
+const activitySchema = new Schema({
+    date: { 
+        type: Date, 
+        default: Date.now 
+    },
+    type: { 
+        type: String, 
+        enum: ['login', 'logout'], 
+        required: true 
+    },
+});
+
 const paymentMethodSchema = new Schema({
     cardNumber: { 
         type: String, 
@@ -93,6 +131,8 @@ const userSchema = new Schema({
     paymentMethod: [paymentMethodSchema],
     evaluations: [evaluationSchema],
     wallet: [walletSchema],
+    sessions: [sessionSchema],
+    activities: [activitySchema],
     created_at: { 
         type: Date, 
         default: Date.now

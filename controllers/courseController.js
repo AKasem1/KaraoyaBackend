@@ -135,6 +135,7 @@ const getCoursesByGradeName = async (req, res) => {
 }
 
 const getCourseById = async (req, res) => {
+    console.log(req.useragent.browser)
     if (req.useragent && req.useragent.browser !== 'Chrome') {
         console.log("Browser should be Safari ")
         return res.status(403).send(`
