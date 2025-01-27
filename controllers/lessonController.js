@@ -219,10 +219,15 @@ const updateWatchDuration = async (req, res) => {
         } else {
             user.watchingDetails.push({
                 lesson_id: lessonId,
-                watchDuration: watchDuration/60,
+                watchDuration: watchDuration / 60,
                 watchTime: new Date(),
             });
         }
+
+        if (watchDuration >= 20) {
+            user.watchedVideos = (user.watchedVideos || 0) + 1;
+        }
+
         await user.save();
 
         res.status(200).json({ success: true, message: 'Watch duration updated successfully' });
@@ -232,7 +237,6 @@ const updateWatchDuration = async (req, res) => {
     }
 };
 
-
 module.exports = { addLesson, getLesson, getLessons, deleteLesson,
     deleteAllLessons, latestWeekInCourse, getCompletedLessons,
-    addVideo, getLessonsByCourse, updateWatchDuration};
+    addVideo, getLessonsByCourse, updateWatchDuration };

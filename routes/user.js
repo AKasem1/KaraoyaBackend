@@ -1,6 +1,10 @@
 const express = require('express');
 const userAuth = require('../middlewares/userAuth')
-const { signup, login, editProfile, getWatchingDetails, forgetPassword, otpVerification, resetPassword, logout, activityHandler, addMoneyToWallet, getWalletHistory } = require('../controllers/userController');
+const { signup, login, editProfile, getWatchingDetails,
+    forgetPassword, otpVerification, resetPassword, logout,
+    activityHandler, addMoneyToWallet, getWalletHistory, getStudentQuizzesHistory, 
+    getMyData}
+     = require('../controllers/userController');
 const { getGrades } = require('../controllers/gradeController');
 const { getCoursesByGrade, getCourseById } = require('../controllers/courseController');
 const { getCompletedLessons, getLessonsByCourse, updateWatchDuration} = require('../controllers/lessonController')
@@ -22,6 +26,7 @@ router.use(userAuth);
 router.put('/editprofile/:id', editProfile)
 router.get('/user-activity/:userId', activityHandler)
 router.get('/coursebyid/:courseId', getCourseById);
+router.get('/getMyData/:userId', getMyData)
 
 router.post('/subscribe/:courseId', subscribeCourse)
 router.get('/mycourses/:userId', getMyCourses)
@@ -38,5 +43,6 @@ router.get('/watching-details/:userId', getWatchingDetails);
 
 router.get('/getQuizByLesson/:lesson_id', getQuizByLesson)
 router.post('/submitQuiz', submitQuiz);
+router.get('/quizzesHistory/:userId', getStudentQuizzesHistory)
 
 module.exports = router;

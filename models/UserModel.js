@@ -12,12 +12,8 @@ const evaluationSchema = new Schema({
         enum: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
         required: true
     },
-    quiz_grades: [
-        {
-            quiz_id: { type: Schema.Types.ObjectId, ref: 'Quiz', required: true },
-            grade: { type: Number, required: true }
-        }
-    ],
+    lesson_id: { type: Schema.Types.ObjectId, ref: 'Lesson'},
+    quiz_grade: { type: Number},
     exam_grade: { 
         type: Schema.Types.Decimal128, 
         required: true 
@@ -29,7 +25,7 @@ const evaluationSchema = new Schema({
     solvedQuizzes: {
         type: Number,
         required: true
-    },
+    }
 });
 
 const walletSchema = new Schema({
@@ -134,6 +130,7 @@ const userSchema = new Schema({
         ref: 'Grade', 
         // required: true 
     },
+    watchedVideos: { type: Number },
     paymentMethod: [paymentMethodSchema],
     evaluations: [evaluationSchema],
     wallet: walletSchema,

@@ -551,9 +551,71 @@ const getWalletHistory = async (req, res) => {
     }
 }
 
+const getStudentQuizzesHistory = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId).populate([
+      { path: 'evaluations.course_id', select: 'name' },
+      { path: 'evaluations.lesson_id', select: 'title' },
+    ]);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+    }
+
+    const quizzesHistory = user.evaluations.map((evaluation) => ({
+      courseName: evaluation.course_id?.name || 'اسم الكورس غير موجود',
+      lessonTitle: evaluation.lesson_id?.title || 'عنوان الدرس غير موجود',
+      month: evaluation.month,
+      quizGrade: evaluation.quiz_grade,
+      examGrade: evaluation.exam_grade ? parseFloat(evaluation.exam_grade.toString()) : parseFloat(evaluation.exam_grade.toString()),
+      score: evaluation.score,
+      solvedQuizzes: evaluation.solvedQuizzes,
+    }));
+
+    res.status(200).json({
+      success: true,
+      quizzesHistory,
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+const getMyData = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findById(userId)
+      .select('name email phone grade watchedVideos evaluations')
+      .populate('grade')
+      .exec();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const numberOfQuizzes = user.evaluations.length;
+
+    res.status(200).json({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      grade: user.grade,
+      watchedVideos: user.watchedVideos,
+      numberOfQuizzes: numberOfQuizzes,
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   signup, editProfile, login, logout,
   getUser, getAllUsers, forgetPassword, otpVerification,
   resetPassword, addAdmin, numOfStudents, getImgUploadKey,
-  getStudents, activityHandler, getWatchingDetails, addMoneyToWallet, getWalletHistory
+  getStudents, activityHandler, getWatchingDetails, addMoneyToWallet, getWalletHistory,
+  getStudentQuizzesHistory, getMyData
 }

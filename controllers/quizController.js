@@ -190,34 +190,26 @@ const submitQuiz = async (req, res) => {
         if (user) {
             console.log("user exists")
             let evaluation = user.evaluations.find(
-                (eval) => eval.course_id.toString() === quiz.course_id.toString() && eval.month === new Date().toLocaleString('ar-EG', { month: 'long' })
+                (eval) => eval.course_id?.toString() === quiz.course_id?.toString() && eval.month === new Date().toLocaleString('ar-EG', { month: 'long' }) && eval.lesson_id?.toString() === quiz.lesson_id?.toString()
             );
 
-            if (!evaluation) {
-                console.log("user evaluation does not exist")
-                evaluation = {
-                    course_id: quiz.course_id,
-                    month: new Date().toLocaleString('ar-EG', { month: 'long' }),
-                    quiz_grades: [],
-                    exam_grade: 0,
-                    score: 0,
-                    solvedQuizzes: 0
-                };
-                user.evaluations.push(evaluation);
+            if (evaluation) {
+                throw Error('تم حل هذا الكويز من قبل')
             }
 
-            const quizGrade = evaluation.quiz_grades.find(
-                (grade) => grade.quiz_id.toString() === quiz_id
-            );
-
-            if (quizGrade) {
-                quizGrade.grade = score;
-            } else {
-                evaluation.quiz_grades.push({ quiz_id, grade: score });
-            }
-
+            evaluation = {
+                course_id: quiz.course_id,
+                month: new Date().toLocaleString('ar-EG', { month: 'long' }),
+                lesson_id: quiz.lesson_id,
+                quiz_grade: score,
+                exam_grade: 0,
+                score: 0,
+                solvedQuizzes: 0
+            };
             evaluation.score += score;
             evaluation.solvedQuizzes += 1;
+        
+            user.evaluations.push(evaluation);
 
             await user.save();
         }

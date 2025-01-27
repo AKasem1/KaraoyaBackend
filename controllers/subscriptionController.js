@@ -197,7 +197,7 @@ const getMyBills = async (req, res) => {
             throw new Error('هذا المستخدم غير موجود');
         }
         const bills = await User.aggregate([
-            { $match: { _id: mongoose.Types.ObjectId(userId) } },
+            { $match: { _id: new mongoose.Types.ObjectId(userId) } },
             { $unwind: '$bills' },
             {
             $lookup: {
@@ -221,9 +221,9 @@ const getMyBills = async (req, res) => {
             }
         ]);
 
-        if (!bills || bills.length === 0) {
-            throw new Error('لا توجد فواتير لهذا المستخدم');
-        }
+        // if (!bills || bills.length === 0) {
+        //     throw new Error('لا توجد فواتير لهذا المستخدم');
+        // }
         res.status(200).json(bills[0].bills);
     }
     catch (error) {
