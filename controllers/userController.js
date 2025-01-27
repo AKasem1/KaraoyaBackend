@@ -491,10 +491,69 @@ const getWatchingDetails = async (req, res) => {
     }
 };
 
+const addMoneyToWallet = async (req, res) => {
+  const { userId } = req.params;
+  const { balance, type } = req.body;
+  const parsedBalance = parseInt(balance, 10);
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+    }
+
+    if (type === 'سحب' || type === 'دفع') {
+      if (user.wallet < parsedBalance) {
+        return res.status(400).json({ success: false, message: 'رصيدك لا يكفي' });
+      }
+    }
+
+    let history = {}
+    console.log(type, userId, parsedBalance)
+    if (type === 'سحب' || type === 'دفع') {
+      user.wallet.balance -= parsedBalance;
+    } else if (type === 'إضافة') {
+      user.wallet.balance += parsedBalance;
+    } else {
+      return res.status(400).json({ success: false, message: 'عملية خاطئة' });
+    }
+
+    history = {
+      type,
+      amount: parsedBalance,
+      date: new Date(),
+    };
+    if(!user.wallet){
+      user.wallet = {balance: 0.0, history: []}
+    }
+    user.wallet.history.push(history);
+
+    await user.save();
+    res.status(200).json({ success: true, wallet: user.wallet });
+
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send({ success: false, message: 'Server error', error: error.message });
+}
+}
+
+const getWalletHistory = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findById(userId).select('wallet.history');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+    }
+    res.status(200).json({ success: true, history: user.wallet.history });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send({ success: false, message: 'Server error', error: error.message });
+    }
+}
 
 module.exports = {
   signup, editProfile, login, logout,
   getUser, getAllUsers, forgetPassword, otpVerification,
   resetPassword, addAdmin, numOfStudents, getImgUploadKey,
-  getStudents, activityHandler, getWatchingDetails
+  getStudents, activityHandler, getWatchingDetails, addMoneyToWallet, getWalletHistory
 }

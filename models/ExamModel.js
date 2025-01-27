@@ -33,6 +33,10 @@ const questionsSchema = new Schema({
     correctAnswer: { 
         type: String, 
         required: true 
+    },
+    questionMark: {
+        type: Number,
+        required: true
     }
 }, { _id: false });
 

@@ -28,6 +28,9 @@ const subscribeCourse = async (req, res) => {
         await payment.save();
         const newSubscription = new Subscription({user_id, course_id: courseId, price});
         await newSubscription.save();
+        const newBill = {course_id: courseId, price, paid: true}
+        user.bills.push(newBill);
+        await user.save();
         res.status(201).json({message: "تم الاشتراك في الكورس بنجاح"})
     }
     catch (error) {
@@ -175,5 +178,58 @@ const getMyCourses = async (req, res) => {
     }
 };
 
+const getMySubscriptions = async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const subscriptions = await Subscription.find({ user_id: userId }).populate('course_id');
+        res.status(200).json(subscriptions);
+    } catch (error) {
+        console.error('Error fetching subscriptions:', error);
+        res.status(500).json({ message: 'Error fetching subscriptions' });
+    }
+}
 
-module.exports = {subscribeCourse, submitCode, deleteSubscription, getMyCourses}
+const getMyBills = async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('هذا المستخدم غير موجود');
+        }
+        const bills = await User.aggregate([
+            { $match: { _id: mongoose.Types.ObjectId(userId) } },
+            { $unwind: '$bills' },
+            {
+            $lookup: {
+                from: 'courses',
+                localField: 'bills.course_id',
+                foreignField: '_id',
+                as: 'bills.courseDetails'
+            }
+            },
+            {
+            $group: {
+                _id: '$_id',
+                bills: { $push: '$bills' }
+            }
+            },
+            {
+            $project: {
+                _id: 0,
+                bills: 1
+            }
+            }
+        ]);
+
+        if (!bills || bills.length === 0) {
+            throw new Error('لا توجد فواتير لهذا المستخدم');
+        }
+        res.status(200).json(bills[0].bills);
+    }
+    catch (error) {
+        console.error('Error fetching bills:', error);
+        res.status(500).json({ message: 'Error fetching bills' });
+    }
+}
+
+module.exports = {subscribeCourse, submitCode, deleteSubscription, getMyCourses, getMySubscriptions, getMyBills};

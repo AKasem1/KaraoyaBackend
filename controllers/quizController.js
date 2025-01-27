@@ -1,6 +1,7 @@
 const Quiz = require('../models/QuizModel');
 const Lesson = require('../models/LessonModel');
 const Course = require('../models/CourseModel');
+const User = require('../models/UserModel');
 
 const addQuiz = async (req, res) => {
     const { lesson_id, course_id, full_mark, questions } = req.body;
@@ -16,13 +17,18 @@ const addQuiz = async (req, res) => {
         if (!questions) {
             throw new Error('يجب إدخال الأسئلة');
         }
+        let totalGrade = 0;
         for (let i = 0; i < questions.length; i++) {
-            const { question, answers, correctAnswer, imgURL } = questions[i];
+            const { question, answers, correctAnswer, imgURL, questionMark } = questions[i];
             if (!question || !answers || !correctAnswer) {
                 throw new Error('يجب إدخال السؤال و الإجابات');
             }
             if (!Array.isArray(answers) || !answers.includes(correctAnswer)) {
                 throw new Error('الإجابة الصحيحة يجب أن تكون من ضمن الإجابات');
+            }
+            totalGrade += questionMark;
+            if (totalGrade > full_mark) {
+                throw new Error('يجب ألا تتخطى درجات الأسئلة الدرجة الكلية');
             }
             quiz.questions.push({ sort: i + 1, question, answers, correctAnswer, imgURL });
         }
@@ -63,7 +69,7 @@ const deleteQuiz = async (req, res) => {
         const lesson = await Lesson.findById(lesson_id);
         if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
         await Quiz.findOneAndDelete({ lesson_id });
-        res.status(200).json({message: 'تم حذف الكويز بنجاح'});
+        res.status(200).json({ message: 'تم حذف الكويز بنجاح' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -82,8 +88,8 @@ const addQuestionToQuiz = async (req, res) => {
     try {
         const lesson_id = req.params.lesson_id;
         console.log(lesson_id);
-        const { question, answers, correctAnswer, imgURL} = req.body;
-        if (!question || !answers || !correctAnswer) return res.status(400).json({ message: 'يجب ادخال السؤال و الاجابات' });
+        const { question, answers, correctAnswer, imgURL, questionMark } = req.body;
+        if (!question || !answers || !correctAnswer || questionMark) return res.status(400).json({ message: 'يجب ادخال السؤال و الاجابات' });
         if (answers.includes(correctAnswer) === false) return res.status(400).json({ message: 'الاجابة الصحيحة يجب ان تكون من ضمن الاجابات' });
         let sortValue = 1;
         console.log("Question: ", req.body);
@@ -94,7 +100,7 @@ const addQuestionToQuiz = async (req, res) => {
             const highestSortValue = Math.max(...quiz.questions.map(q => q.sort));
             sortValue = highestSortValue + 1;
         }
-        const questions = { sort: sortValue, question, answers, correctAnswer, imgURL };
+        const questions = { sort: sortValue, question, answers, correctAnswer, imgURL, questionMark };
         if (!quiz.questions) {
             quiz.questions = questions;
         }
@@ -162,4 +168,66 @@ const editQuizQuestion = async (req, res) => {
     }
 }
 
-module.exports = { addQuiz, getQuizzesByCourse, getQuizByLesson, deleteQuiz, deleteAllQuizzes, addQuestionToQuiz, deleteQuizQuestion, editQuizQuestion };
+const submitQuiz = async (req, res) => {
+    try {
+        const { quiz_id, user_id, score } = req.body;
+        console.log(quiz_id, user_id, score)
+        const quiz = await Quiz.findById(quiz_id);
+        if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+
+
+        const existingMark = quiz.studentMarks.find(
+            (mark) => mark.user_id.toString() === user_id
+        );
+        if (existingMark) {
+            existingMark.mark = score;
+        } else {
+            quiz.studentMarks.push({ user_id, mark: score });
+        }
+        await quiz.save();
+
+        const user = await User.findById(user_id);
+        if (user) {
+            console.log("user exists")
+            let evaluation = user.evaluations.find(
+                (eval) => eval.course_id.toString() === quiz.course_id.toString() && eval.month === new Date().toLocaleString('ar-EG', { month: 'long' })
+            );
+
+            if (!evaluation) {
+                console.log("user evaluation does not exist")
+                evaluation = {
+                    course_id: quiz.course_id,
+                    month: new Date().toLocaleString('ar-EG', { month: 'long' }),
+                    quiz_grades: [],
+                    exam_grade: 0,
+                    score: 0,
+                    solvedQuizzes: 0
+                };
+                user.evaluations.push(evaluation);
+            }
+
+            const quizGrade = evaluation.quiz_grades.find(
+                (grade) => grade.quiz_id.toString() === quiz_id
+            );
+
+            if (quizGrade) {
+                quizGrade.grade = score;
+            } else {
+                evaluation.quiz_grades.push({ quiz_id, grade: score });
+            }
+
+            evaluation.score += score;
+            evaluation.solvedQuizzes += 1;
+
+            await user.save();
+        }
+
+        
+        res.json({ message: 'تم حل الكويز بنجاح' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error submitting quiz' });
+    }
+}
+
+module.exports = { addQuiz, getQuizzesByCourse, getQuizByLesson, deleteQuiz, deleteAllQuizzes, addQuestionToQuiz, deleteQuizQuestion, editQuizQuestion, submitQuiz };

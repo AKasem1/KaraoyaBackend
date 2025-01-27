@@ -25,14 +25,24 @@ const evaluationSchema = new Schema({
     score: { 
         type: Number, 
         required: true 
-    }
+    },
+    solvedQuizzes: {
+        type: Number,
+        required: true
+    },
 });
 
 const walletSchema = new Schema({
     balance: { 
-        type: Schema.Types.Decimal128, 
+        type: Number, 
         default: 0.00 
     },
+    history: [
+        {
+            date: { type: Date, default: Date.now },
+            amount: { type: Number, required: true },
+            type: { type: String, enum: ['سحب', 'دفع', 'إضافة'], required: true },
+        }],
     created_at: { type: Date, default: Date.now }
 });
 
@@ -69,7 +79,7 @@ const activitySchema = new Schema({
     },
     type: { 
         type: String, 
-        enum: ['login', 'logout'], 
+        enum: ['login', 'logout', 'signup'], 
         required: true 
     },
 });
@@ -122,11 +132,11 @@ const userSchema = new Schema({
     grade: { 
         type: Schema.Types.ObjectId, 
         ref: 'Grade', 
-        required: true 
+        // required: true 
     },
     paymentMethod: [paymentMethodSchema],
     evaluations: [evaluationSchema],
-    wallet: [walletSchema],
+    wallet: walletSchema,
     sessions: [sessionSchema],
     activities: [activitySchema],
     watchingDetails: [
@@ -136,6 +146,12 @@ const userSchema = new Schema({
             watchTime: { type: Date, required: true },
         },
     ],
+    bills:[{
+        course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
+        price: { type: Schema.Types.Decimal128, required: true },
+        paid: { type: Boolean, default: false },
+        created_at: { type: Date, default: Date.now }
+    }],
     created_at: { 
         type: Date, 
         default: Date.now
